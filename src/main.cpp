@@ -431,7 +431,7 @@ int main(int argc, char* argv[])
             model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, BUNNY);
-            glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
+            glUniform1i(g_surface_type_uniform, JADE_SURFACE);
             DrawVirtualObject("the_bunny");
             model = Matrix_Translate(x, 0.0f, rectangle_vertices[2].z);
             model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
@@ -439,7 +439,7 @@ int main(int argc, char* argv[])
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
 
             glUniform1i(g_object_id_uniform, BUNNY);
-            glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
+            glUniform1i(g_surface_type_uniform, JADE_SURFACE);
             DrawVirtualObject("the_bunny");
         }
         for(float z = rectangle_vertices[0].z; z <= rectangle_vertices[1].z; z += distance_between_bunnies){
@@ -447,16 +447,59 @@ int main(int argc, char* argv[])
             model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, BUNNY);
+            glUniform1i(g_surface_type_uniform, JADE_SURFACE);
+            DrawVirtualObject("the_bunny");
+            model = Matrix_Translate(rectangle_vertices[2].x, 0.0f, z);
+            model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            glUniform1i(g_surface_type_uniform, JADE_SURFACE);
+            DrawVirtualObject("the_bunny");
+        }
+
+        float half_width = (rectangle_vertices[2].x - rectangle_vertices[0].x) / 2.0f;
+        float half_height = (rectangle_vertices[1].z - rectangle_vertices[0].z) / 2.0f;
+        float diamond_step = distance_between_bunnies * 0.8f;
+
+        for(float x = rectangle_vertices[0].x; x <= rectangle_vertices[2].x; x += diamond_step){
+            float upper_z = half_height - (half_height / std::max(half_width, 1.0e-6f)) * std::abs(x);
+            float lower_z = -upper_z;
+
+            model = Matrix_Translate(x, 0.0f, upper_z);
+            model = Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
             glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
             DrawVirtualObject("the_bunny");
 
-            model = Matrix_Translate(rectangle_vertices[2].x, 0.0f, z);
-            model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
+            model = Matrix_Translate(x, 0.0f, lower_z);
+            model = Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, BUNNY);
             glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
             DrawVirtualObject("the_bunny");
         }
+
+        float center_x = (rectangle_vertices[0].x + rectangle_vertices[2].x) / 2.0f;
+        float center_z = (rectangle_vertices[0].z + rectangle_vertices[1].z) / 2.0f;
+        float circle_radius = std::min(half_width, half_height) * 0.55f;
+        float circle_steps = std::max(24.0f, (2.0f * 3.14159265358979323846f * circle_radius) / std::max(distance_between_bunnies, 0.1f));
+
+        for(float angle = 0.0f; angle <= 2.0f * 3.14159265358979323846f; angle += (2.0f * 3.14159265358979323846f) / circle_steps){
+            float x = center_x + circle_radius * cos(angle);
+            float z = center_z + circle_radius * sin(angle);
+
+            model = Matrix_Translate(x, 0.0f, z);
+            model = Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            glUniform1i(g_surface_type_uniform, BLUE_PLASTIC_SURFACE);
+            DrawVirtualObject("the_bunny");
+        }
+
+        // desenhando o 
+
+
 
         /*
         // Desenhamos o modelo da esfera
