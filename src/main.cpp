@@ -18,13 +18,12 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
+#include <vector>
 // Headers abaixo são específicos de C++
 #include <set>
 #include <map>
 #include <stack>
 #include <string>
-#include <vector>
 #include <limits>
 #include <fstream>
 #include <sstream>
@@ -216,6 +215,13 @@ GLint g_projection_uniform;
 GLint g_object_id_uniform;
 GLint g_surface_type_uniform;
 
+struct coordinates
+{
+    float x;
+    float y;
+    float z;
+};
+
 int main(int argc, char* argv[])
 {
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
@@ -405,14 +411,61 @@ int main(int argc, char* argv[])
         #define BLUE_PLASTIC_SURFACE 3
         #define RED_VELVET_SURFACE   4
         #define JADE_SURFACE         6
+        
+        std::vector<coordinates> rectangle_vertices = {
+        {-6.0f, 0.0f, -4.0f}, //vértice inferior esquerdo
+        {-6.0f, 0.0f,  4.0f}, // vértice superior  esquerdo
+        { 6.0f, 0.0f,  4.0f}, // vértice superior direito
+        { 6.0f, 0.0f, -4.0f} // vértice inferior esquerdo
+        };
+        int bunnies =  24;
+        float perimeter = 0;
+        for(int i = 0; i < 4; i++){
+            perimeter += sqrt(pow(rectangle_vertices[i].x - rectangle_vertices[(i+1)%4].x, 2) + pow(rectangle_vertices[i].y - rectangle_vertices[(i+1)%4].y, 2) + pow(rectangle_vertices[i].z - rectangle_vertices[(i+1)%4].z, 2));
+        }
+        float distance_between_bunnies = (perimeter / bunnies) + 0.2f;
+        bool end_drawing = false;
+        float px, py, pz;
+        for(float x = rectangle_vertices[0].x; x <= rectangle_vertices[2].x; x += distance_between_bunnies){
+            model = Matrix_Translate(x, 0.0f, rectangle_vertices[0].z);
+            model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
+            DrawVirtualObject("the_bunny");
+            model = Matrix_Translate(x, 0.0f, rectangle_vertices[2].z);
+            model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
 
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+
+            glUniform1i(g_object_id_uniform, BUNNY);
+            glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
+            DrawVirtualObject("the_bunny");
+        }
+        for(float z = rectangle_vertices[0].z; z <= rectangle_vertices[1].z; z += distance_between_bunnies){
+            model = Matrix_Translate(rectangle_vertices[0].x, 0.0f, z);
+            model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
+            DrawVirtualObject("the_bunny");
+
+            model = Matrix_Translate(rectangle_vertices[2].x, 0.0f, z);
+            model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
+            DrawVirtualObject("the_bunny");
+        }
+
+        /*
         // Desenhamos o modelo da esfera
-        model = Matrix_Translate(-2.0f,0.0f,0.0f);
+        model = Matrix_Translate(0.0f,0.0f,0.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, SPHERE);
         glUniform1i(g_surface_type_uniform, RED_VELVET_SURFACE);
         DrawVirtualObject("the_sphere");
-
+        
         // Desenhamos três coelhos com as cores verde, dourada e azul.
         const int bunny_surfaces[3] = {
             JADE_SURFACE,
@@ -427,7 +480,7 @@ int main(int argc, char* argv[])
             glUniform1i(g_surface_type_uniform, bunny_surfaces[i]);
             DrawVirtualObject("the_bunny");
         }
-
+        */
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,-1.0f,0.0f) * Matrix_Scale(4.0f,1.0f,4.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
