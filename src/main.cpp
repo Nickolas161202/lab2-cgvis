@@ -29,6 +29,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
+#include <chrono>
 
 // Headers das bibliotecas OpenGL
 #include <glad/glad.h>   // Criação de contexto OpenGL 3.3
@@ -324,6 +325,10 @@ int main(int argc, char* argv[])
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
+    
+    auto last_timestamp = std::chrono::high_resolution_clock::now();
+    float time = 0.0f;
+
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -412,118 +417,142 @@ int main(int argc, char* argv[])
         #define RED_VELVET_SURFACE   4
         #define JADE_SURFACE         6
         
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float deltaTime = std::chrono::duration<float>(currentTime - last_timestamp).count();
+        last_timestamp = currentTime;
+        time += deltaTime;
+
         std::vector<coordinates> rectangle_vertices = {
-        {-6.0f, 0.0f, -4.0f}, //vértice inferior esquerdo
-        {-6.0f, 0.0f,  4.0f}, // vértice superior  esquerdo
-        { 6.0f, 0.0f,  4.0f}, // vértice superior direito
-        { 6.0f, 0.0f, -4.0f} // vértice inferior esquerdo
+        {-8.0f, 0.0f, -6.0f}, //vértice inferior esquerdo
+        {-8.0f, 0.0f,  6.0f}, // vértice superior  esquerdo
+        { 8.0f, 0.0f,  6.0f}, // vértice superior direito
+        { 8.0f, 0.0f, -6.0f} // vértice inferior esquerdo
         };
-        int bunnies =  24;
-        float perimeter = 0;
-        for(int i = 0; i < 4; i++){
-            perimeter += sqrt(pow(rectangle_vertices[i].x - rectangle_vertices[(i+1)%4].x, 2) + pow(rectangle_vertices[i].y - rectangle_vertices[(i+1)%4].y, 2) + pow(rectangle_vertices[i].z - rectangle_vertices[(i+1)%4].z, 2));
-        }
-        float distance_between_bunnies = (perimeter / bunnies) + 0.2f;
-        bool end_drawing = false;
-        float px, py, pz;
-        for(float x = rectangle_vertices[0].x; x <= rectangle_vertices[2].x; x += distance_between_bunnies){
-            model = Matrix_Translate(x, 0.0f, rectangle_vertices[0].z);
-            model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, BUNNY);
-            glUniform1i(g_surface_type_uniform, JADE_SURFACE);
-            DrawVirtualObject("the_bunny");
-            model = Matrix_Translate(x, 0.0f, rectangle_vertices[2].z);
-            model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
 
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-
-            glUniform1i(g_object_id_uniform, BUNNY);
-            glUniform1i(g_surface_type_uniform, JADE_SURFACE);
-            DrawVirtualObject("the_bunny");
-        }
-        for(float z = rectangle_vertices[0].z; z <= rectangle_vertices[1].z; z += distance_between_bunnies){
-            model = Matrix_Translate(rectangle_vertices[0].x, 0.0f, z);
-            model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, BUNNY);
-            glUniform1i(g_surface_type_uniform, JADE_SURFACE);
-            DrawVirtualObject("the_bunny");
-            model = Matrix_Translate(rectangle_vertices[2].x, 0.0f, z);
-            model =  Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, BUNNY);
-            glUniform1i(g_surface_type_uniform, JADE_SURFACE);
-            DrawVirtualObject("the_bunny");
-        }
-
-        float half_width = (rectangle_vertices[2].x - rectangle_vertices[0].x) / 2.0f;
-        float half_height = (rectangle_vertices[1].z - rectangle_vertices[0].z) / 2.0f;
-        float diamond_step = distance_between_bunnies * 0.8f;
-
-        for(float x = rectangle_vertices[0].x; x <= rectangle_vertices[2].x; x += diamond_step){
-            float upper_z = half_height - (half_height / std::max(half_width, 1.0e-6f)) * std::abs(x);
-            float lower_z = -upper_z;
-
-            model = Matrix_Translate(x, 0.0f, upper_z);
-            model = Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, BUNNY);
-            glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
-            DrawVirtualObject("the_bunny");
-
-            model = Matrix_Translate(x, 0.0f, lower_z);
-            model = Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, BUNNY);
-            glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
-            DrawVirtualObject("the_bunny");
-        }
-
-        float center_x = (rectangle_vertices[0].x + rectangle_vertices[2].x) / 2.0f;
-        float center_z = (rectangle_vertices[0].z + rectangle_vertices[1].z) / 2.0f;
+        coordinates bunny_size = {0.3f, 0.3f, 0.3f};
+        int bunnies = 24;
+        float motion_speed = 1.2f;
+        float rectangle_width = rectangle_vertices[2].x - rectangle_vertices[0].x;
+        float rectangle_height = rectangle_vertices[1].z - rectangle_vertices[0].z;
+        float rectangle_perimeter = 2.0f * (rectangle_width + rectangle_height);
+        float rectangle_center_x = (rectangle_vertices[0].x + rectangle_vertices[2].x) * 0.5f;
+        float rectangle_center_z = (rectangle_vertices[0].z + rectangle_vertices[1].z) * 0.5f;
+        float half_width = (rectangle_vertices[2].x - rectangle_vertices[0].x) * 0.5f;
+        float half_height = (rectangle_vertices[1].z - rectangle_vertices[0].z) * 0.5f;
+        float side_length = std::sqrt(half_width * half_width + half_height * half_height);
+        float diamond_perimeter = 4.0f * side_length;
+        const float full_turn = 2.0f * 3.14159265358979323846f;
         float circle_radius = std::min(half_width, half_height) * 0.55f;
-        float circle_steps = std::max(24.0f, (2.0f * 3.14159265358979323846f * circle_radius) / std::max(distance_between_bunnies, 0.1f));
 
-        for(float angle = 0.0f; angle <= 2.0f * 3.14159265358979323846f; angle += (2.0f * 3.14159265358979323846f) / circle_steps){
-            float x = center_x + circle_radius * cos(angle);
-            float z = center_z + circle_radius * sin(angle);
+        static std::vector<float> rectangle_initial_positions;
+        static std::vector<float> diamond_initial_positions;
+        static std::vector<float> circle_initial_positions;
+
+        if (rectangle_initial_positions.empty())
+        {
+            rectangle_initial_positions.resize(bunnies);
+            diamond_initial_positions.resize(bunnies);
+            circle_initial_positions.resize(bunnies);
+
+            for (int i = 0; i < bunnies; ++i)
+            {
+                rectangle_initial_positions[i] = (float)i * rectangle_perimeter / (float)bunnies;
+                diamond_initial_positions[i] = (float)i * diamond_perimeter / (float)bunnies;
+                circle_initial_positions[i] = (float)i * full_turn / (float)bunnies;
+            }
+        }
+
+        for (int i = 0; i < bunnies; ++i)
+        {
+            float perimeter_pos = std::fmod(rectangle_initial_positions[i] + time * motion_speed * rectangle_perimeter, rectangle_perimeter);
+            float x = 0.0f;
+            float z = 0.0f;
+
+            if (perimeter_pos < rectangle_width)
+            {
+                x = rectangle_vertices[0].x + perimeter_pos;
+                z = rectangle_vertices[0].z;
+            }
+            else if (perimeter_pos < rectangle_width + rectangle_height)
+            {
+                x = rectangle_vertices[2].x;
+                z = rectangle_vertices[0].z + (perimeter_pos - rectangle_width);
+            }
+            else if (perimeter_pos < 2.0f * rectangle_width + rectangle_height)
+            {
+                x = rectangle_vertices[2].x - (perimeter_pos - (rectangle_width + rectangle_height));
+                z = rectangle_vertices[1].z;
+            }
+            else
+            {
+                x = rectangle_vertices[0].x;
+                z = rectangle_vertices[1].z - (perimeter_pos - (2.0f * rectangle_width + rectangle_height));
+            }
 
             model = Matrix_Translate(x, 0.0f, z);
-            model = Matrix_Scale(0.5f, 0.5f, 0.5f) * model;
+            model = Matrix_Scale(bunny_size.x, bunny_size.y, bunny_size.z) * model;
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            glUniform1i(g_surface_type_uniform, JADE_SURFACE);
+            DrawVirtualObject("the_bunny");
+        }
+
+        for (int i = 0; i < bunnies; ++i)
+        {
+            float perimeter_pos = std::fmod(diamond_initial_positions[i] + time * motion_speed * diamond_perimeter, diamond_perimeter);
+            float x = 0.0f;
+            float z = 0.0f;
+
+            if (perimeter_pos < side_length)
+            {
+                float t = perimeter_pos / side_length;
+                x = rectangle_center_x - half_width + half_width * t;
+                z = rectangle_center_z + half_height * t;
+            }
+            else if (perimeter_pos < 2.0f * side_length)
+            {
+                float t = (perimeter_pos - side_length) / side_length;
+                x = rectangle_center_x + half_width * t;
+                z = rectangle_center_z + half_height * (1.0f - t);
+            }
+            else if (perimeter_pos < 3.0f * side_length)
+            {
+                float t = (perimeter_pos - 2.0f * side_length) / side_length;
+                x = rectangle_center_x + half_width * (1.0f - t);
+                z = rectangle_center_z - half_height * t;
+            }
+            else
+            {
+                float t = (perimeter_pos - 3.0f * side_length) / side_length;
+                x = rectangle_center_x - half_width * t;
+                z = rectangle_center_z - half_height * (1.0f - t);
+            }
+
+            model = Matrix_Translate(x, 0.0f, z);
+            model = Matrix_Scale(bunny_size.x, bunny_size.y, bunny_size.z) * model;
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
+            DrawVirtualObject("the_bunny");
+        }
+
+        for (int i = 0; i < bunnies; ++i)
+        {
+            float angle = std::fmod(circle_initial_positions[i] + time * motion_speed, full_turn);
+            float x = rectangle_center_x + circle_radius * std::cos(angle);
+            float z = rectangle_center_z + circle_radius * std::sin(angle);
+            model = Matrix_Translate(x, 0.0f, z);
+            model = Matrix_Scale(bunny_size.x, bunny_size.y, bunny_size.z) * model;
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, BUNNY);
             glUniform1i(g_surface_type_uniform, BLUE_PLASTIC_SURFACE);
             DrawVirtualObject("the_bunny");
         }
 
-        // desenhando o 
 
 
 
-        /*
-        // Desenhamos o modelo da esfera
-        model = Matrix_Translate(0.0f,0.0f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, SPHERE);
-        glUniform1i(g_surface_type_uniform, RED_VELVET_SURFACE);
-        DrawVirtualObject("the_sphere");
-        
-        // Desenhamos três coelhos com as cores verde, dourada e azul.
-        const int bunny_surfaces[3] = {
-            JADE_SURFACE,
-            GOLD_SURFACE,
-            BLUE_PLASTIC_SURFACE
-        };
-        for (int i = 0; i < 3; ++i)
-        {
-            model = Matrix_Translate(2.0f * i,0.0f,0.0f);
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, BUNNY);
-            glUniform1i(g_surface_type_uniform, bunny_surfaces[i]);
-            DrawVirtualObject("the_bunny");
-        }
-        */
+
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,-1.0f,0.0f) * Matrix_Scale(4.0f,1.0f,4.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
