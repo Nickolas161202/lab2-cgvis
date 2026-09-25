@@ -430,8 +430,8 @@ int main(int argc, char* argv[])
         };
 
         coordinates bunny_size = {0.3f, 0.3f, 0.3f};
-        int bunnies = 24;
-        float motion_speed = 1.2f;
+        int bunnies = 10;
+        float motion_speed = 0.1f;
         float rectangle_width = rectangle_vertices[2].x - rectangle_vertices[0].x;
         float rectangle_height = rectangle_vertices[1].z - rectangle_vertices[0].z;
         float rectangle_perimeter = 2.0f * (rectangle_width + rectangle_height);
@@ -461,7 +461,6 @@ int main(int argc, char* argv[])
                 circle_initial_positions[i] = (float)i * full_turn / (float)bunnies;
             }
         }
-
         for (int i = 0; i < bunnies; ++i)
         {
             float perimeter_pos = std::fmod(rectangle_initial_positions[i] + time * motion_speed * rectangle_perimeter, rectangle_perimeter);
@@ -534,6 +533,7 @@ int main(int argc, char* argv[])
             glUniform1i(g_object_id_uniform, BUNNY);
             glUniform1i(g_surface_type_uniform, GOLD_SURFACE);
             DrawVirtualObject("the_bunny");
+            
         }
 
         for (int i = 0; i < bunnies; ++i)
